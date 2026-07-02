@@ -1,0 +1,39 @@
+name: UK Job Alert Bot
+
+on:
+  schedule:
+    # Runs at 8am and 6pm UTC every day. Edit these numbers to change the times.
+    - cron: '0 8,18 * * *'
+  workflow_dispatch: {}   # lets you also trigger it manually from the GitHub website
+
+jobs:
+  check-jobs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Restore memory of previously seen jobs
+        uses: actions/cache@v4
+        with:
+          path: seen_jobs.json
+          key: seen-jobs-cache
+          restore-keys: |
+            seen-jobs-cache
+
+      - name: Run job search and send email
+        env:
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+          EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
+          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        run: python uk_job_alert_bot.py
